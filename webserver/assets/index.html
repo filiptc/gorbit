@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webcam</title>
+</head>
+<body>
+    <img id="mainStream" src="/stream">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var img = $('#mainStream');
+            img.dblclick(function(e) {
+                var offset = $(this).offset();
+                var offsetX = e.pageX - offset.left;
+                var offsetY = e.pageY - offset.top;
+                var offsetYfromCenter = (offsetY - img.height() / 2) / img.height();
+                var offsetXfromCenter = -(offsetX - img.width() / 2) / img.width();
+                $.post({
+                    url: "/move",
+                    data: JSON.stringify({y: offsetYfromCenter, x: offsetXfromCenter}),
+                    dataType: "json"
+                });
+            });
+        });
+    </script>
+</body>
+</html>
