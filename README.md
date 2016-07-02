@@ -1,18 +1,18 @@
-
 #GOrbit
-
 
 Simple HTTP MJPEG streaming for V4L2 webcams and pan/tilt control (for Logitech® Orbit AF only). Written in Go.
 
 
 ## Requirements
 * Own a V4L2 compatible camera and install v4l2 packages.
-* (optional) For controlling Logitech® Orbit AF, scroll down to [this section](#logitech®-orbit-af-control).
+* (optional) For controlling Logitech® Orbit AF, scroll down to [the Orbit section](#logitech-orbit-af-control).
 
 ## Install
-Download latest release for your architecture (Linux only). Be aware that the cross compiling for ARM devices
-(e.g. Raspberry Pi) will not work for the time being, due to CGO compiler limitations. If you need to
-compile for ARM devices, you will need to do so from within the device (and vice versa).
+Download [latest release](https://github.com/filiptc/gorbit/releases/latest) for your architecture (Linux only).
+Extract and run binary.
+
+*Note:* I can only provide X64 and ARM binaries for the time being. If you need a binary for a different architecture
+ you will need to [build from sources](#build-from-sources) yourself.
 
 ## Usage
 #### CLI controls:
@@ -29,15 +29,22 @@ compile for ARM devices, you will need to do so from within the device (and vice
 
 ## Build from sources
 Install Go on your system. Run `go install github.com/filiptc/gorbit`. Binary will be available on `$GOPATH/bin/gorbit`.
+Be aware that the cross compiling will not work for the time being, due to CGO compiler limitations. If you need to
+compile for another architecture, you will need to do so from within it.
 
 
 ## Logitech® Orbit AF control
-In order to correctly make GOrbit control pan/tilt/reset you need to install uvcdynctrl
-(`sudo apt-get install uvcdynctrl` on Debian) and import Logitech® controls. This can be done running
+In order to correctly make GOrbit control pan/tilt/reset, you need to install uvcdynctrl
+(`sudo apt-get install uvcdynctrl` on Debian) and import Logitech® controls. This can be done by running
 `uvcdynctrl --import=/path/to/logitech.xml`. The default file provided by the uvcdynctrl package works for
-pan/tilt but doesn't allow for pan/tilt simultaneous reset. Download the following [logitech.xml](https://raw.githubusercontent.com/llmike/v4l2-tools/master/libwebcam-src-0.2.4/uvcdynctrl/data/046d/logitech.xml)
+pan/tilt, but doesn't allow for pan/tilt simultaneous reset. Download the following [logitech.xml](https://raw.githubusercontent.com/llmike/v4l2-tools/master/libwebcam-src-0.2.4/uvcdynctrl/data/046d/logitech.xml)
 to allow pan/tilt resets.
 
+## TODOs
+* Write tests
+* Neaten up UI
+* Allow providing all config values on execution through CLI
+* Image text overlays (timestamp, camera, etc.)
 
 ## The MIT License (MIT)
 Copyright (c) 2016 Philip Thomas Casado
