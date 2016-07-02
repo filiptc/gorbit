@@ -43,8 +43,6 @@ func (r *moveRoute) Register() {
 			if err != nil {
 				c.JSON(400, gin.H{"status": fmt.Sprintf("Error: %s", err)})
 				return
-			} else {
-				c.JSON(200, gin.H{"status": "ok"})
 			}
 
 		}
@@ -57,9 +55,9 @@ func (r *moveRoute) Register() {
 			if err != nil {
 				c.JSON(400, gin.H{"status": fmt.Sprintf("Error: %s", err)})
 				return
-			} else {
-				c.JSON(200, gin.H{"status": "ok"})
 			}
 		}
+
+		c.JSON(200, gin.H{"status": "ok"})
 	})
 }
