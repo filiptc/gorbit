@@ -38,7 +38,7 @@ func (r *streamRoute) streamWebcam(c *gin.Context) func(w io.Writer) bool {
 		contentType := fmt.Sprintf("multipart/x-mixed-replace;boundary=%s", mimeWriter.Boundary())
 		c.Writer.Header().Add("Content-Type", contentType)
 
-		cb := handleNewFrame(c, mimeWriter)
+		cb := handleNewFrame(c, mimeWriter, r.cs)
 		r.o.On("newFrame", cb)
 
 		clientGone := w.(gin.ResponseWriter).CloseNotify()
@@ -53,17 +53,17 @@ func (r *streamRoute) streamWebcam(c *gin.Context) func(w io.Writer) bool {
 	}
 }
 
-func handleNewFrame(c *gin.Context, mw *multipart.Writer) func(frame []byte) {
+func handleNewFrame(c *gin.Context, mw *multipart.Writer, cs *console.Console) func(frame []byte) {
 	return func(frame []byte) {
 		partHeader := make(textproto.MIMEHeader)
 		partHeader.Add("Content-Type", "image/jpeg")
 		partWriter, partErr := mw.CreatePart(partHeader)
 		if nil != partErr {
-			panic(partErr)
+			cs.Error("Error writing HTTP headers: %s", partErr)
 		}
 
 		if _, writeErr := partWriter.Write(frame); nil != writeErr {
-			panic(writeErr)
+			cs.Error("Error writing to tcp: %s", writeErr)
 		}
 	}
 }

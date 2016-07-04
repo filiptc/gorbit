@@ -1,20 +1,20 @@
 package webcam
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/GianlucaGuarini/go-observable"
 	"github.com/blackjack/webcam"
+	"gopkg.in/klaidliadon/console.v1"
 )
 
 type WebCam struct {
-	o *observable.Observable
+	o  *observable.Observable
+	cs *console.Console
 }
 
-func NewWebCam(o *observable.Observable) *WebCam {
-	return &WebCam{o}
+func NewWebCam(o *observable.Observable, cs *console.Console) *WebCam {
+	return &WebCam{o, cs}
 }
 
 func (wc *WebCam) InitStream() {
@@ -42,17 +42,17 @@ func (wc *WebCam) InitStream() {
 		switch err.(type) {
 		case nil:
 		case *webcam.Timeout:
-			fmt.Fprint(os.Stderr, err.Error())
+			wc.cs.Error("Video source timed out: %s", err)
 			continue
 		default:
-			panic(err.Error())
+			wc.cs.Error("Unhandled error: %s", err)
 		}
 
 		frame, err := cam.ReadFrame()
 		if len(frame) != 0 {
 			wc.o.Trigger("newFrame", frame)
 		} else if err != nil {
-			panic(err.Error())
+			wc.cs.Error("Could not read frame: %s", err)
 		}
 	}
 }

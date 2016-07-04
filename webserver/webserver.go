@@ -20,7 +20,7 @@ type WebserverCommand struct {
 func (c *WebserverCommand) Execute(args []string) error {
 	gin.SetMode(gin.ReleaseMode)
 	c.cs.Info("Server running...")
-	wc := webcam.NewWebCam(c.o)
+	wc := webcam.NewWebCam(c.o, c.cs)
 	go wc.InitStream()
 	r := gin.Default()
 	routes.Register(r, c.conf, c.cs, c.o)
