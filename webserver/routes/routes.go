@@ -12,7 +12,7 @@ type Route interface {
 }
 
 func Register(r *gin.Engine, conf *config.Config, cs *console.Console, o *observable.Observable) {
-	newIndex(r).Register()
+	newIndex(r, conf).Register()
 	newMove(r, conf, cs).Register()
 	newStream(r, conf, cs, o).Register()
 }

@@ -1,12 +1,9 @@
 package routes
 
 import (
-	"io"
-
-	"mime/multipart"
-
 	"fmt"
-
+	"io"
+	"mime/multipart"
 	"net/textproto"
 
 	"github.com/GianlucaGuarini/go-observable"
@@ -14,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/klaidliadon/console.v1"
 )
+
+const mjpeg_boundary = "frame"
 
 type streamRoute struct {
 	r    *gin.Engine
@@ -28,42 +27,72 @@ func newStream(r *gin.Engine, conf *config.Config, cs *console.Console, o *obser
 
 func (r *streamRoute) Register() {
 	r.r.GET("/stream", func(c *gin.Context) {
-		c.Stream(r.streamWebcam(c))
+		defer r.cs.Debug("Client %s closed connection", c.Request.RemoteAddr)
+		r.cs.Debug("New client %s", c.Request.RemoteAddr)
+
+		contentType := fmt.Sprintf("multipart/x-mixed-replace;boundary=%s", mjpeg_boundary)
+		c.Writer.Header().Add("Content-Type", contentType)
+
+		frameQueue := make(chan []byte, 1)
+
+		cb := func(frame []byte) { frameQueue <- frame }
+		r.o.On("newFrame", cb)
+
+		c.Stream(r.streamFrame(frameQueue, cb))
 	})
 }
 
-func (r *streamRoute) streamWebcam(c *gin.Context) func(w io.Writer) bool {
+func (r *streamRoute) streamFrame(frameQueue chan []byte, cb func(frame []byte)) func(w io.Writer) bool {
 	return func(w io.Writer) bool {
 		mimeWriter := multipart.NewWriter(w)
-		contentType := fmt.Sprintf("multipart/x-mixed-replace;boundary=%s", mimeWriter.Boundary())
-		c.Writer.Header().Add("Content-Type", contentType)
-
-		cb := handleNewFrame(c, mimeWriter, r.cs)
-		r.o.On("newFrame", cb)
-
-		clientGone := w.(gin.ResponseWriter).CloseNotify()
-		for {
-			select {
-			case <-clientGone:
-				r.o.Off("newFrame", cb)
-				return false
-			}
+		if err := mimeWriter.SetBoundary(mjpeg_boundary); err != nil {
+			r.cs.Error("Could not set boundary: %s", err)
+			return false
 		}
-		return true
+
+		return r.writeFrameOrQuit(w, cb, frameQueue, mimeWriter)
+
 	}
 }
 
-func handleNewFrame(c *gin.Context, mw *multipart.Writer, cs *console.Console) func(frame []byte) {
-	return func(frame []byte) {
-		partHeader := make(textproto.MIMEHeader)
-		partHeader.Add("Content-Type", "image/jpeg")
-		partWriter, partErr := mw.CreatePart(partHeader)
-		if nil != partErr {
-			cs.Error("Error writing HTTP headers: %s", partErr)
-		}
+func (r *streamRoute) writeFrameOrQuit(
+	w io.Writer,
+	cb func(frame []byte),
+	frameQueue chan []byte,
+	mw *multipart.Writer,
+) bool {
 
-		if _, writeErr := partWriter.Write(frame); nil != writeErr {
-			cs.Error("Error writing to tcp: %s", writeErr)
+	select {
+	case <-w.(gin.ResponseWriter).CloseNotify():
+		r.o.Off("newFrame", cb)
+		return false
+	case frame := <-frameQueue:
+		/* removed for performance (this call lags 600ms on Rpi3)
+		frame, err := image.MergeOverlay(frame, r.conf)
+		if err != nil {
+			r.cs.Error("Error decorating: %s", err)
+			return false
+		}
+		*/
+		if err := r.writeFrame(frame, mw); err != nil {
+			r.cs.Error("Error writing frame into stream: %s", err)
+			return false
 		}
 	}
+	return true
+}
+
+func (r *streamRoute) writeFrame(frame []byte, mw *multipart.Writer) error {
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Add("Content-Type", "image/jpeg")
+	partWriter, partErr := mw.CreatePart(partHeader)
+	if nil != partErr {
+		return partErr
+	}
+
+	if _, writeErr := partWriter.Write(frame); nil != writeErr {
+		return writeErr
+	}
+
+	return nil
 }

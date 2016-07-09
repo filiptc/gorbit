@@ -8,35 +8,44 @@ import (
 	"time"
 )
 
-const ProcessingCommandError = "A previous command is being processed"
+const (
+	ProcessingCommandError = "A previous command is being processed"
+	pan_command            = "Pan (relative)"
+	tilt_command           = "Tilt (relative)"
+	reset_command          = "Pan/Tilt Reset"
+	antiJamDelay           = 500 * time.Millisecond
+)
 
 type command struct {
-	name  string
-	value int
+	x int
+	y int
 }
 
 var commandQueue chan command
 
-func Pan(amount int) error {
-	return enqueueCommand(command{"Pan (relative)", amount})
-}
-
-func Tilt(amount int) error {
-	return enqueueCommand(command{"Tilt (relative)", amount})
+func PanTilt(x, y int) error {
+	return enqueueCommand(command{x, y})
 }
 
 func Reset() error {
-	return enqueueCommand(command{"Pan/Tilt Reset", 0})
+	return execCommand(reset_command, 0)
 }
 
 func ProcessCommands() {
-	commandQueue = make(chan command, 2)
-	antiJamDelay := 500 * time.Millisecond
+	commandQueue = make(chan command, 1)
 	throttle := time.Tick(antiJamDelay)
 	for {
 		<-throttle
 		cmd := <-commandQueue
-		execCommand(cmd)
+		if cmd.x != 0 {
+			execCommand(pan_command, cmd.x)
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		if cmd.y != 0 {
+			execCommand(tilt_command, cmd.y)
+		}
+
 		throttle = time.Tick(antiJamDelay)
 	}
 }
@@ -50,8 +59,8 @@ func enqueueCommand(cmd command) error {
 	return nil
 }
 
-func execCommand(c command) error {
-	cmd := exec.Command("uvcdynctrl", "-s", c.name, "--", strconv.Itoa(c.value))
+func execCommand(name string, value int) error {
+	cmd := exec.Command("uvcdynctrl", "-s", name, "--", strconv.Itoa(value))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", err, string(output))

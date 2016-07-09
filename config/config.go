@@ -1,19 +1,28 @@
 package config
 
-type FieldOfView struct {
+type fieldOfView struct {
 	Width  int
 	Height int
 }
 
+type cameraConfig struct {
+	Width  uint32
+	Height uint32
+	Device string
+}
+
 type Config struct {
-	FieldOfView FieldOfView
+	FieldOfView fieldOfView
 	AngleFactor float64
-	Port        int
+	Port        uint64
+	Cam         cameraConfig
+	Font        []byte
+	Index       []byte
 }
 
 func NewConfig() *Config {
 	return &Config{
-		FieldOfView: FieldOfView{
+		FieldOfView: fieldOfView{
 			Width:  63,
 			Height: 47,
 		},

@@ -5,39 +5,45 @@ import (
 
 	"github.com/GianlucaGuarini/go-observable"
 	"github.com/blackjack/webcam"
+	"github.com/filiptc/gorbit/config"
 	"gopkg.in/klaidliadon/console.v1"
 )
 
 type WebCam struct {
-	o  *observable.Observable
-	cs *console.Console
+	o    *observable.Observable
+	cs   *console.Console
+	conf *config.Config
+	Cam  *webcam.Webcam
 }
 
-func NewWebCam(o *observable.Observable, cs *console.Console) *WebCam {
-	return &WebCam{o, cs}
-}
-
-func (wc *WebCam) InitStream() {
-	cam, err := webcam.Open("/dev/video0")
+func NewWebCam(o *observable.Observable, cs *console.Console, conf *config.Config) *WebCam {
+	cam, err := webcam.Open(conf.Cam.Device)
 	if err != nil {
 		panic(err.Error())
 	}
-	defer cam.Close()
+	return &WebCam{o, cs, conf, cam}
+}
 
-	format_desc := cam.GetSupportedFormats()
+func (wc *WebCam) GetFormatSlice() []webcam.PixelFormat {
+
+	format_desc := wc.Cam.GetSupportedFormats()
 	var formats []webcam.PixelFormat
 	for f := range format_desc {
 		formats = append(formats, f)
 	}
+	return formats
+}
 
-	cam.SetImageFormat(formats[0], uint32(800), uint32(600))
+func (wc *WebCam) InitStream() {
+	defer wc.Cam.Close()
+	wc.Cam.SetImageFormat(wc.GetFormatSlice()[0], wc.conf.Cam.Width, wc.conf.Cam.Height)
 
-	err = cam.StartStreaming()
+	err := wc.Cam.StartStreaming()
 	if err != nil {
 		panic(err.Error())
 	}
 	for {
-		err = cam.WaitForFrame(uint32(time.Second))
+		err = wc.Cam.WaitForFrame(uint32(time.Second))
 
 		switch err.(type) {
 		case nil:
@@ -48,7 +54,7 @@ func (wc *WebCam) InitStream() {
 			wc.cs.Error("Unhandled error: %s", err)
 		}
 
-		frame, err := cam.ReadFrame()
+		frame, err := wc.Cam.ReadFrame()
 		if len(frame) != 0 {
 			wc.o.Trigger("newFrame", frame)
 		} else if err != nil {

@@ -39,11 +39,11 @@ func (c *ControlCommand) Execute(args []string) error {
 	}
 
 	if c.Pan != 0 {
-		return webcam.Pan(c.Pan)
+		return webcam.PanTilt(c.Pan, 0)
 	}
 
 	if c.Tilt != 0 {
-		return webcam.Tilt(c.Tilt)
+		return webcam.PanTilt(0, c.Tilt)
 	}
 
 	return webcam.Reset()
