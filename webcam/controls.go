@@ -37,13 +37,14 @@ func ProcessCommands() {
 	for {
 		<-throttle
 		cmd := <-commandQueue
-		if cmd.x != 0 {
-			execCommand(pan_command, cmd.x)
-			time.Sleep(500 * time.Millisecond)
-		}
 
 		if cmd.y != 0 {
 			execCommand(tilt_command, cmd.y)
+			time.Sleep(antiJamDelay)
+		}
+
+		if cmd.x != 0 {
+			execCommand(pan_command, cmd.x)
 		}
 
 		throttle = time.Tick(antiJamDelay)
@@ -60,6 +61,7 @@ func enqueueCommand(cmd command) error {
 }
 
 func execCommand(name string, value int) error {
+	fmt.Printf("Issuing \"%s\": %d\n", name, value)
 	cmd := exec.Command("uvcdynctrl", "-s", name, "--", strconv.Itoa(value))
 	output, err := cmd.CombinedOutput()
 	if err != nil {

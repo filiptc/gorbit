@@ -3,25 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <title>Webcam</title>
+    <style>
+        .controls>div {
+            width: 50px;
+            height: 50px;
+            background: #ffffff;
+            border: 5px solid #ff8100;
+            box-sizing: border-box;
+            border-radius: 50px;
+            position: absolute;
+            display: flex;
+            text-align: center;
+            align-items: center;
+        }
+
+        .controls {
+            width: 120px;
+            height: 120px;
+            box-sizing: border-box;
+            display: inline-block;
+            position: relative;
+        }
+
+        .up, .down, .left, .right {
+            cursor: pointer;
+        }
+        
+        .up, .down {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .left, .right {
+            font-size: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .up {
+            top: 0;
+        }
+
+        .right {
+            right: 0;
+        }
+
+        .down {
+            bottom: 0;
+        }
+
+        .left {
+            left: 0;
+        }
+
+        .up:after {content: '\25b2';}
+        .right:after {content: '\25b6';}
+        .down:after {content: '\25bc';}
+        .left:after {content: '\25C0';}
+
+        .controls>div:after {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <img id="mainStream" src="/stream">
+    <div class="image">
+        <img id="mainStream" src="/stream">
+        <div class="controls">
+            <div class="up" onclick="up()"></div>
+            <div class="right" onclick="right()"></div>
+            <div class="down" onclick="down()"></div>
+            <div class="left" onclick="left()"></div>
+        </div>
+    </div>
+    <div class="disable-click">
+        <label>
+            <input id="enableClick" type="checkbox" checked="checked">
+            Allow re-centering by clicking on image
+        </label>
+    </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
     <script>
         $(document).ready(function() {
-            var img = $('#mainStream');
-            img.click(function(e) {
-                var offset = $(this).offset();
-                var offsetX = e.pageX - offset.left;
-                var offsetY = e.pageY - offset.top;
-                var offsetYfromCenter = (offsetY - img.height() / 2) / img.height();
-                var offsetXfromCenter = -(offsetX - img.width() / 2) / img.width();
+            function up() {
+                move(0, -0.4)
+            }
+
+            function right() {
+                move(-0.4, 0)
+            }
+
+            function down() {
+                move(0, 0.4)
+            }
+
+            function left() {
+                move(0.4, 0)
+            }
+
+
+            function move(x, y) {
                 $.post({
                     url: "/move",
-                    data: JSON.stringify({y: offsetYfromCenter, x: offsetXfromCenter}),
+                    data: JSON.stringify({y: y, x: x}),
                     dataType: "json"
                 });
-            });
+            }
+
+            function initialize() {
+                window.up = up;
+                window.right = right;
+                window.down = down;
+                window.left = left;
+
+                var enableCheckbox = $('#enableClick');
+                var img = $('#mainStream');
+                img.click(function(e) {
+                    if (!enableCheckbox.is(":checked")) {
+                        return;
+                    }
+                    var offset = $(this).offset();
+                    var offsetX = e.pageX - offset.left;
+                    var offsetY = e.pageY - offset.top;
+                    var offsetYfromCenter = (offsetY - img.height() / 2) / img.height();
+                    var offsetXfromCenter = -(offsetX - img.width() / 2) / img.width();
+                    move(offsetXfromCenter, offsetYfromCenter)
+                });
+            }
+
+            initialize();
+
         });
     </script>
 </body>
