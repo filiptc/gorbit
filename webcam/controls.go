@@ -13,7 +13,7 @@ const (
 	pan_command            = "Pan (relative)"
 	tilt_command           = "Tilt (relative)"
 	reset_command          = "Pan/Tilt Reset"
-	led_mode               = "LED Mode"
+	led_mode               = "LED1 Mode"
 	antiJamDelay           = 500 * time.Millisecond
 )
 
