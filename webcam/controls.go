@@ -13,6 +13,7 @@ const (
 	pan_command            = "Pan (relative)"
 	tilt_command           = "Tilt (relative)"
 	reset_command          = "Pan/Tilt Reset"
+	led_mode               = "LED Mode"
 	antiJamDelay           = 500 * time.Millisecond
 )
 
@@ -29,6 +30,18 @@ func PanTilt(x, y int) error {
 
 func Reset() error {
 	return execCommand(reset_command, 0)
+}
+
+func LedOff() error {
+	return execCommand(led_mode, 0)
+}
+
+func LedOn() error {
+	return execCommand(led_mode, 1)
+}
+
+func LedBlink() error {
+	return execCommand(led_mode, 2)
 }
 
 func ProcessCommands() {

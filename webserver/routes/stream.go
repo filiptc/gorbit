@@ -8,6 +8,7 @@ import (
 
 	"github.com/GianlucaGuarini/go-observable"
 	"github.com/filiptc/gorbit/config"
+	"github.com/filiptc/gorbit/webcam"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/klaidliadon/console.v1"
 )
@@ -15,20 +16,45 @@ import (
 const mjpeg_boundary = "frame"
 
 type streamRoute struct {
-	r    *gin.Engine
-	conf *config.Config
-	cs   *console.Console
-	o    *observable.Observable
+	r           *gin.Engine
+	conf        *config.Config
+	cs          *console.Console
+	o           *observable.Observable
+	connects    chan string
+	disconnects chan string
 }
 
 func newStream(r *gin.Engine, conf *config.Config, cs *console.Console, o *observable.Observable) Route {
-	return &streamRoute{r, conf, cs, o}
+	sr := &streamRoute{r, conf, cs, o, make(chan string), make(chan string)}
+	sr.connectsHandler()
+	return sr
+}
+
+func (r *streamRoute) connectsHandler() {
+	connectedClients := 0
+	for {
+		prevClients := connectedClients
+		select {
+		case ip := <-r.connects:
+			r.cs.Debug("New client %s", ip)
+			connectedClients++
+		case ip := <-r.disconnects:
+			r.cs.Debug("Client %s closed connection", ip)
+			connectedClients--
+		}
+
+		if connectedClients == 0 {
+			webcam.LedOff()
+		} else if prevClients == 0 {
+			webcam.LedBlink()
+		}
+	}
 }
 
 func (r *streamRoute) Register() {
 	r.r.GET("/stream", func(c *gin.Context) {
-		defer r.cs.Debug("Client %s closed connection", c.Request.RemoteAddr)
-		r.cs.Debug("New client %s", c.Request.RemoteAddr)
+		defer func(ip string) { r.disconnects <- ip }(c.Request.RemoteAddr)
+		r.connects <- c.Request.RemoteAddr
 
 		contentType := fmt.Sprintf("multipart/x-mixed-replace;boundary=%s", mjpeg_boundary)
 		c.Writer.Header().Add("Content-Type", contentType)

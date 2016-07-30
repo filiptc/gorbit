@@ -44,6 +44,7 @@ func (wc *WebCam) InitStream() {
 	if err != nil {
 		panic(err.Error())
 	}
+	LedOff()
 	for {
 		err = wc.Cam.WaitForFrame(uint32(time.Second))
 
