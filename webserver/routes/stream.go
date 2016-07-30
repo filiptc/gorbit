@@ -26,7 +26,7 @@ type streamRoute struct {
 
 func newStream(r *gin.Engine, conf *config.Config, cs *console.Console, o *observable.Observable) Route {
 	sr := &streamRoute{r, conf, cs, o, make(chan string), make(chan string)}
-	sr.connectsHandler()
+	go sr.connectsHandler()
 	return sr
 }
 
